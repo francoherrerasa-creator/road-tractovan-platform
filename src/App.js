@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 const T = {
   bg:"#07090C",surface:"#0C1018",card:"#111620",cardHov:"#151C28",
@@ -358,6 +358,20 @@ Ejecutivo, directo, español, sin emojis, máximo 200 palabras.`}]})});
 // ══════════════════════════════════════════════════════════════════════
 function TabInbound({leads:initialLeads}){
   const [leads,setLeads]=useState(initialLeads);
+  const [liveConnected,setLiveConnected]=useState(false);
+
+  useEffect(()=>{
+    const fetchLeads=async()=>{
+      try{
+        const res=await fetch('https://road-tractovan-andrea-production.up.railway.app/leads');
+        const data=await res.json();
+        if(data.leads&&data.leads.length>0){setLeads(data.leads);setLiveConnected(true);}
+      }catch(e){console.log('Using mock data');}
+    };
+    fetchLeads();
+    const interval=setInterval(fetchLeads,120000);
+    return()=>clearInterval(interval);
+  },[]);
   const [selected,setSelected]=useState(null);
   const [stageFilter,setStageFilter]=useState(null);
   const [search,setSearch]=useState("");
