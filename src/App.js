@@ -1,3 +1,5 @@
+/* eslint-disable no-unused-vars */
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useCallback, useRef } from "react";
 
 const T = {
@@ -132,18 +134,25 @@ function TabUpdate({inLeads,outProspects}){
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState(null);
   const ran=useRef(false);
-  const active=inLeads.filter(l=>l.stage!=="ganado"&&l.stage!=="perdido");
-  const S={inActive:active.length,inGanado:inLeads.filter(l=>l.stage==="ganado").length,inNeg:inLeads.filter(l=>l.stage==="negociacion").length,inScore:Math.round(inLeads.reduce((a,b)=>a+b.score,0)/inLeads.length),outActive:outProspects.filter(p=>p.stage!=="ganado"&&p.stage!=="perdido").length,stalled:inLeads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="ganado"&&l.stage!=="perdido"),top:[...inLeads].filter(l=>l.stage!=="perdido").sort((a,b)=>b.score-a.score)[0]};
+
+  const inActive=inLeads.filter(l=>l.stage!=="ganado"&&l.stage!=="perdido").length;
+  const inGanado=inLeads.filter(l=>l.stage==="ganado").length;
+  const inNeg=inLeads.filter(l=>l.stage==="negociacion").length;
+  const inScore=Math.round(inLeads.reduce((a,b)=>a+b.score,0)/inLeads.length);
+  const outActive=outProspects.filter(p=>p.stage!=="ganado"&&p.stage!=="perdido").length;
+  const stalled=inLeads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="ganado"&&l.stage!=="perdido");
+  const top=[...inLeads].filter(l=>l.stage!=="perdido").sort((a,b)=>b.score-a.score)[0];
+
   const generate=useCallback(async()=>{
     if(ran.current)return;ran.current=true;setLoading(true);setError(null);
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Eres asesor estratégico C-Level de Road Tractovan (venta y arrendamiento de tractocamiones México).
 
 PIPELINE HOY:
-Inbound activos: ${S.inActive} | Ganados: ${S.inGanado} | Negociación: ${S.inNeg} | Score prom: ${S.inScore}/100 | Estancados +14d: ${S.stalled.length}
-Lead top: ${S.top?.empresa} (stage: ${S.top?.stage}, score ${S.top?.score})
+Inbound activos: ${inActive} | Ganados: ${inGanado} | Negociación: ${inNeg} | Score prom: ${inScore}/100 | Estancados +14d: ${stalled.length}
+Lead top: ${top?.empresa} (stage: ${top?.stage}, score ${top?.score})
 Etapas inbound: ${INBOUND_STAGES.map(s=>s.label+": "+inLeads.filter(l=>l.stage===s.id).length).join(" | ")}
-Outbound activos: ${S.outActive} | Etapas: ${OUTBOUND_STAGES.map(s=>s.label+": "+outProspects.filter(p=>p.stage===s.id).length).join(" | ")}
+Outbound activos: ${outActive} | Etapas: ${OUTBOUND_STAGES.map(s=>s.label+": "+outProspects.filter(p=>p.stage===s.id).length).join(" | ")}
 
 Genera briefing ejecutivo EXACTAMENTE con esta estructura:
 
@@ -163,11 +172,13 @@ Genera briefing ejecutivo EXACTAMENTE con esta estructura:
 
 Ejecutivo, directo, español, sin emojis, máximo 200 palabras.`}]})});
       const d=await res.json();setBrief(d.content?.[0]?.text||"Sin respuesta.");
-    }catch{setError("Error conectando con Claude API.");}
+    }catch(e){setError("Error conectando con Claude API.");}
     setLoading(false);
-  },[]);
+  },[inLeads,outProspects]);
+
   const secC=(t)=>t.includes("GENERAL")?{c:"#E8873A",s:"rgba(232,135,58,0.09)"}:t.includes("CRÍTICA")?{c:"#FBBF24",s:"rgba(251,191,36,0.08)"}:t.includes("PRIORIDADES")?{c:"#4ADE80",s:"rgba(74,222,128,0.08)"}:{c:"#60A5FA",s:"rgba(96,165,250,0.08)"};
   const sections=brief?brief.split(/\n(?=\*\*)/).filter(Boolean):[];
+
   return(
     <div style={{maxWidth:900,margin:"0 auto"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:24}}>
@@ -182,14 +193,14 @@ Ejecutivo, directo, español, sin emojis, máximo 200 palabras.`}]})});
         <button onClick={()=>{ran.current=false;setBrief(null);generate();}} style={{padding:"9px 18px",borderRadius:8,background:"rgba(232,135,58,0.09)",border:"1px solid rgba(232,135,58,0.3)",color:"#E8873A",fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"'Outfit',sans-serif"}}>{loading?"...":brief?"↻ Regenerar":"✦ Generar briefing"}</button>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,marginBottom:18}}>
-        <StatCard label="Leads activos" value={S.inActive} sub="Inbound" accent="#E8873A"/>
-        <StatCard label="Ganados" value={S.inGanado} sub="Cerrados" accent="#4ADE80"/>
-        <StatCard label="Negociación" value={S.inNeg} sub="Calientes" accent="#FBBF24"/>
-        <StatCard label="Estancados" value={S.stalled.length} sub="+14 días" accent="#F87171"/>
-        <StatCard label="Outbound" value={S.outActive} sub="Activos" accent="#A78BFA"/>
-        <StatCard label="Score prom." value={S.inScore} sub="/ 100" accent="#60A5FA"/>
+        <StatCard label="Leads activos" value={inActive} sub="Inbound" accent="#E8873A"/>
+        <StatCard label="Ganados" value={inGanado} sub="Cerrados" accent="#4ADE80"/>
+        <StatCard label="Negociación" value={inNeg} sub="Calientes" accent="#FBBF24"/>
+        <StatCard label="Estancados" value={stalled.length} sub="+14 días" accent="#F87171"/>
+        <StatCard label="Outbound" value={outActive} sub="Activos" accent="#A78BFA"/>
+        <StatCard label="Score prom." value={inScore} sub="/ 100" accent="#60A5FA"/>
       </div>
-      {S.stalled.length>0&&<div style={{background:"rgba(248,113,113,0.08)",border:"1px solid rgba(248,113,113,0.25)",borderRadius:10,padding:"11px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}><div style={{width:6,height:6,borderRadius:"50%",background:"#F87171",flexShrink:0}}/><span style={{fontSize:12,color:"#F87171",fontWeight:600}}>{S.stalled.length} lead{S.stalled.length>1?"s":""} sin movimiento +14 días: </span><span style={{fontSize:12,color:"#7A90A8"}}>{S.stalled.map(l=>l.empresa).join(", ")}</span></div>}
+      {stalled.length>0&&<div style={{background:"rgba(248,113,113,0.08)",border:"1px solid rgba(248,113,113,0.25)",borderRadius:10,padding:"11px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}}><div style={{width:6,height:6,borderRadius:"50%",background:"#F87171",flexShrink:0}}/><span style={{fontSize:12,color:"#F87171",fontWeight:600}}>{stalled.length} lead{stalled.length>1?"s":""} sin movimiento +14 días: </span><span style={{fontSize:12,color:"#7A90A8"}}>{stalled.map(l=>l.empresa).join(", ")}</span></div>}
       {!brief&&!loading&&!error&&<div style={{padding:"50px 0",textAlign:"center"}}><div style={{fontSize:36,marginBottom:14}}>📊</div><div style={{fontSize:13,color:"#7A90A8",marginBottom:18}}>El briefing se genera con IA analizando el estado real del pipeline</div><button onClick={generate} style={{padding:"12px 28px",borderRadius:10,background:"#E8873A",color:"#000",fontWeight:700,fontSize:13,border:"none",cursor:"pointer",fontFamily:"'Outfit',sans-serif"}}>✦ Generar Update ejecutivo</button></div>}
       {loading&&<div style={{padding:"50px 0",textAlign:"center"}}><Spinner color="#E8873A"/><div style={{fontSize:12,color:"#7A90A8",marginTop:12}}>Analizando pipeline con Claude...</div></div>}
       {error&&<div style={{padding:14,borderRadius:10,background:"rgba(248,113,113,0.08)",border:"1px solid rgba(248,113,113,0.3)",color:"#F87171",fontSize:13}}>{error}</div>}
@@ -213,8 +224,17 @@ function TabInbound({leads:initialLeads}){
     setSelected(prev=>prev?.id===id?{...prev,stage:ns,fecha_stage:today,historial:[...prev.historial,{stage:ns,fecha:today}]}:prev);
   };
 
-  const S={total:leads.length,active:leads.filter(l=>l.stage!=="ganado"&&l.stage!=="perdido").length,ganado:leads.filter(l=>l.stage==="ganado").length,neg:leads.filter(l=>l.stage==="negociacion").length,stalled:leads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="ganado"&&l.stage!=="perdido").length};
-  const filtered=leads.filter(l=>{if(stageFilter&&l.stage!==stageFilter)return false;if(search&&!`${l.empresa}${l.contacto}${l.ciudad}`.toLowerCase().includes(search.toLowerCase()))return false;return true;});
+  const total=leads.length;
+  const active=leads.filter(l=>l.stage!=="ganado"&&l.stage!=="perdido").length;
+  const ganado=leads.filter(l=>l.stage==="ganado").length;
+  const neg=leads.filter(l=>l.stage==="negociacion").length;
+  const stalled=leads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="ganado"&&l.stage!=="perdido").length;
+
+  const filtered=leads.filter(l=>{
+    if(stageFilter&&l.stage!==stageFilter)return false;
+    if(search&&!`${l.empresa}${l.contacto}${l.ciudad}`.toLowerCase().includes(search.toLowerCase()))return false;
+    return true;
+  });
 
   const handleAI=useCallback(async(lead)=>{
     setAiLoading(true);setAiResult(null);
@@ -230,7 +250,7 @@ POTENCIAL
 [2 líneas]
 
 SIGUIENTE PASO
-[1 acción concreta considerando ${diasEnStage(lead.fecha_stage)} días en "${s?.label}"]
+[1 acción concreta]
 
 ARGUMENTO CLAVE
 [1 frase personalizada]
@@ -240,18 +260,18 @@ RIESGO
 
 Español, 110 palabras máximo.`}]})});
       const d=await res.json();setAiResult(d.content?.[0]?.text||"Sin respuesta.");
-    }catch{setAiResult("Error con Claude API.");}
+    }catch(e){setAiResult("Error con Claude API.");}
     setAiLoading(false);
   },[]);
 
   return(
     <div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:16}}>
-        <StatCard label="Total" value={S.total} sub="Desde inicio" accent="#E8873A"/>
-        <StatCard label="Activos" value={S.active} sub="En pipeline" accent="#2DD4BF"/>
-        <StatCard label="Ganados" value={S.ganado} sub="Cerrados" accent="#4ADE80"/>
-        <StatCard label="Negociación" value={S.neg} sub="Calientes" accent="#FBBF24"/>
-        <StatCard label="Estancados" value={S.stalled} sub="+14 días" accent="#F87171"/>
+        <StatCard label="Total" value={total} sub="Desde inicio" accent="#E8873A"/>
+        <StatCard label="Activos" value={active} sub="En pipeline" accent="#2DD4BF"/>
+        <StatCard label="Ganados" value={ganado} sub="Cerrados" accent="#4ADE80"/>
+        <StatCard label="Negociación" value={neg} sub="Calientes" accent="#FBBF24"/>
+        <StatCard label="Estancados" value={stalled} sub="+14 días" accent="#F87171"/>
       </div>
       <Funnel stages={INBOUND_STAGES} items={leads} onFilter={setStageFilter} activeFilter={stageFilter}/>
       <div style={{display:"flex",gap:8,marginBottom:14,alignItems:"center"}}>
@@ -335,7 +355,7 @@ function TabOutbound({prospects:initialProspects}){
     try{
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1500,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:`SDR México buscando prospectos para Road Tractovan (tractocamiones). ICP: ${JSON.stringify(icpForm)}. Busca 5-8 empresas reales mexicanas. Para cada una: nombre, ciudad, industria, flota estimada, por qué son buenos prospectos, señal de compra, cargo del decisor. En español.`}]})});
       const d=await res.json();setSearchResult(d.content?.filter(b=>b.type==="text").map(b=>b.text).join("\n")||"Sin resultados.");
-    }catch{setSearchResult("Error en búsqueda.");}
+    }catch(e){setSearchResult("Error en búsqueda.");}
     setSearching(false);
   },[icpForm]);
 
@@ -345,20 +365,28 @@ function TabOutbound({prospects:initialProspects}){
       const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:`Consultor McKinsey analizando "${p.empresa}" para Road Tractovan. Busca info real. Genera: RESUMEN EJECUTIVO, FODA, MODELO DE NEGOCIO, BENCHMARK, SEÑALES DE COMPRA, CONTACTO IDEAL (cargo + approach), MENSAJE DE OUTREACH (4-5 líneas personalizado), SIGUIENTES PASOS (3 acciones). En español.`}]})});
       const d=await res.json();const txt=d.content?.filter(b=>b.type==="text").map(b=>b.text).join("\n")||"";
       setAnalysis(prev=>({...prev,[id]:txt}));moveStage(id,"investigado");
-    }catch{setAnalysis(prev=>({...prev,[id]:"Error generando análisis."}));}
+    }catch(e){setAnalysis(prev=>({...prev,[id]:"Error generando análisis."}));}
     setAnalysisLoading(prev=>({...prev,[id]:false}));
   },[]);
 
-  const filtered=prospects.filter(p=>{if(stageFilter&&p.stage!==stageFilter)return false;if(search&&!`${p.empresa}${p.industria}${p.ciudad}`.toLowerCase().includes(search.toLowerCase()))return false;return true;});
-  const S={active:prospects.filter(p=>p.stage!=="ganado"&&p.stage!=="perdido").length,ganado:prospects.filter(p=>p.stage==="ganado").length,respondio:prospects.filter(p=>p.stage==="respondio").length,alta:prospects.filter(p=>p.prioridad==="Alta").length};
+  const filtered=prospects.filter(p=>{
+    if(stageFilter&&p.stage!==stageFilter)return false;
+    if(search&&!`${p.empresa}${p.industria}${p.ciudad}`.toLowerCase().includes(search.toLowerCase()))return false;
+    return true;
+  });
+
+  const pActive=prospects.filter(p=>p.stage!=="ganado"&&p.stage!=="perdido").length;
+  const pGanado=prospects.filter(p=>p.stage==="ganado").length;
+  const pRespondio=prospects.filter(p=>p.stage==="respondio").length;
+  const pAlta=prospects.filter(p=>p.prioridad==="Alta").length;
 
   return(
     <div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
-        <StatCard label="Prospectos activos" value={S.active} sub="En pipeline" accent="#A78BFA"/>
-        <StatCard label="Respondieron" value={S.respondio} sub="Interés confirmado" accent="#FBBF24"/>
-        <StatCard label="Prioridad alta" value={S.alta} sub="Top prospects" accent="#F87171"/>
-        <StatCard label="Ganados" value={S.ganado} sub="Convertidos" accent="#4ADE80"/>
+        <StatCard label="Prospectos activos" value={pActive} sub="En pipeline" accent="#A78BFA"/>
+        <StatCard label="Respondieron" value={pRespondio} sub="Interés confirmado" accent="#FBBF24"/>
+        <StatCard label="Prioridad alta" value={pAlta} sub="Top prospects" accent="#F87171"/>
+        <StatCard label="Ganados" value={pGanado} sub="Convertidos" accent="#4ADE80"/>
       </div>
       <Funnel stages={OUTBOUND_STAGES} items={prospects} onFilter={setStageFilter} activeFilter={stageFilter}/>
       <div style={{marginBottom:16}}>
@@ -404,7 +432,7 @@ function TabOutbound({prospects:initialProspects}){
           </tbody>
         </table>
       </div>
-      <div style={{marginTop:8,fontSize:10,color:"#364860"}}>{filtered.length} de {prospects.length} prospectos · Click en el embudo para filtrar</div>
+      <div style={{marginTop:8,fontSize:10,color:"#364860"}}>{filtered.length} de {prospects.length} prospectos</div>
 
       {selected&&<>
         <div onClick={()=>setSelected(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:140}}/>
