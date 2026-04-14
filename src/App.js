@@ -41,21 +41,9 @@ const OUTBOUND_STAGES = [
 
 const mkDate = (d) => { const dt=new Date(); dt.setDate(dt.getDate()-d); return dt.toISOString().split("T")[0]; };
 
-const INBOUND_LEADS_INIT = [
-  {id:1,empresa:"Transportes Garza SA de CV",contacto:"Ing. Roberto Garza",telefono:"+52 81 1234 5678",email:"rgarza@tgarza.mx",ciudad:"Monterrey, NL",flota:"28 unidades",tipo_carga:"Refrigerados / cadena de frío",urgencia:"Alta",servicio:"Arrendamiento",stage:"cita_agendada",fecha_entrada:mkDate(18),fecha_stage:mkDate(5),notas:"Flota con 3 años antigüedad, busca renovar 8 unidades este Q1.",score:92,historial:[{stage:"nuevo_contacto",fecha:mkDate(18)},{stage:"calificado",fecha:mkDate(14)},{stage:"cita_agendada",fecha:mkDate(5)}]},
-  {id:2,empresa:"Logística del Norte SRL",contacto:"Lic. Carmen Vega",telefono:"+52 81 9876 5432",email:"cvega@lognorte.com",ciudad:"Monterrey, NL",flota:"45 unidades",tipo_carga:"Carga general seca",urgencia:"Media",servicio:"Compra directa",stage:"propuesta_enviada",fecha_entrada:mkDate(32),fecha_stage:mkDate(8),notas:"Interesados en 5 tractocamiones. Proceso formal.",score:78,historial:[{stage:"nuevo_contacto",fecha:mkDate(32)},{stage:"calificado",fecha:mkDate(28)},{stage:"cita_agendada",fecha:mkDate(20)},{stage:"visita_realizada",fecha:mkDate(15)},{stage:"propuesta_enviada",fecha:mkDate(8)}]},
-  {id:3,empresa:"Distribuidora Apex CDMX",contacto:"Sr. Miguel Olvera",telefono:"+52 55 4567 8901",email:"molvera@apex.mx",ciudad:"CDMX",flota:"12 unidades",tipo_carga:"Electrodomésticos / retail",urgencia:"Baja",servicio:"Arrendamiento",stage:"calificado",fecha_entrada:mkDate(7),fecha_stage:mkDate(3),notas:"Inicio de operaciones en marzo.",score:61,historial:[{stage:"nuevo_contacto",fecha:mkDate(7)},{stage:"calificado",fecha:mkDate(3)}]},
-  {id:4,empresa:"Grupo Industrial Reyes",contacto:"Ing. Patricia Reyes",telefono:"+52 33 3214 5678",email:"preyes@gireyesmx.com",ciudad:"Guadalajara, JAL",flota:"67 unidades",tipo_carga:"Materiales construcción",urgencia:"Alta",servicio:"Compra directa",stage:"negociacion",fecha_entrada:mkDate(45),fecha_stage:mkDate(16),notas:"Licitación formal. Oportunidad ancla.",score:95,historial:[{stage:"nuevo_contacto",fecha:mkDate(45)},{stage:"calificado",fecha:mkDate(40)},{stage:"cita_agendada",fecha:mkDate(32)},{stage:"visita_realizada",fecha:mkDate(25)},{stage:"propuesta_enviada",fecha:mkDate(15)},{stage:"negociacion",fecha:mkDate(16)}]},
-  {id:5,empresa:"Retail Express MX SA",contacto:"Mtro. Juan Salinas",telefono:"+52 55 7890 1234",email:"jsalinas@retailex.mx",ciudad:"CDMX",flota:"19 unidades",tipo_carga:"Paquetería / e-commerce",urgencia:"Media",servicio:"Arrendamiento",stage:"perdido",fecha_entrada:mkDate(60),fecha_stage:mkDate(20),notas:"Presupuesto no alineado. Recontactar en Q2.",score:34,historial:[{stage:"nuevo_contacto",fecha:mkDate(60)},{stage:"calificado",fecha:mkDate(55)},{stage:"perdido",fecha:mkDate(20)}]},
-  {id:6,empresa:"Alimentos del Golfo SA",contacto:"Ing. Sandra Torres",telefono:"+52 22 6543 2109",email:"storres@alimgolfo.mx",ciudad:"Veracruz, VER",flota:"33 unidades",tipo_carga:"Alimentos perecederos",urgencia:"Alta",servicio:"Compra directa",stage:"visita_realizada",fecha_entrada:mkDate(22),fecha_stage:mkDate(3),notas:"Alta intención de compra. Esperan propuesta.",score:87,historial:[{stage:"nuevo_contacto",fecha:mkDate(22)},{stage:"calificado",fecha:mkDate(18)},{stage:"cita_agendada",fecha:mkDate(10)},{stage:"visita_realizada",fecha:mkDate(3)}]},
-];
+const INBOUND_LEADS_INIT = [];
 
-const OUTBOUND_PROSPECTS_INIT = [
-  {id:1,empresa:"FEMSA Logística",industria:"Retail / Distribución",ciudad:"Monterrey, NL",flota_est:"500+",web:"femsa.com",stage:"investigado",prioridad:"Alta",contacto_clave:"Dir. de Operaciones",señales:"Expansión Q1 2025, nueva planta Apodaca",fecha_entrada:mkDate(12),fecha_stage:mkDate(3),notas:"Análisis completo generado.",historial:[{stage:"identificado",fecha:mkDate(12)},{stage:"investigado",fecha:mkDate(3)}]},
-  {id:2,empresa:"Grupo Bimbo Transport",industria:"Alimentos / FMCG",ciudad:"CDMX",flota_est:"300+",web:"grupobimbo.com",stage:"mensaje_enviado",prioridad:"Alta",contacto_clave:"VP Supply Chain",señales:"Renovación de flota en reporte anual",fecha_entrada:mkDate(25),fecha_stage:mkDate(6),notas:"Email enviado. Sin respuesta aún.",historial:[{stage:"identificado",fecha:mkDate(25)},{stage:"investigado",fecha:mkDate(20)},{stage:"mensaje_enviado",fecha:mkDate(6)}]},
-  {id:3,empresa:"Liverpool Distribución",industria:"Retail / Moda",ciudad:"CDMX",flota_est:"80-120",web:"liverpool.com.mx",stage:"respondio",prioridad:"Media",contacto_clave:"Gerente de Flota",señales:"Nueva tienda en Guadalajara",fecha_entrada:mkDate(35),fecha_stage:mkDate(4),notas:"Respondió positivo.",historial:[{stage:"identificado",fecha:mkDate(35)},{stage:"investigado",fecha:mkDate(30)},{stage:"mensaje_enviado",fecha:mkDate(18)},{stage:"respondio",fecha:mkDate(4)}]},
-  {id:4,empresa:"Grupo Lala Norte",industria:"Lácteos / Cadena frío",ciudad:"Torreón, COA",flota_est:"200+",web:"lala.com.mx",stage:"identificado",prioridad:"Alta",contacto_clave:"Dir. de Flota",señales:"Contrato nuevo con Walmart",fecha_entrada:mkDate(2),fecha_stage:mkDate(2),notas:"Recién identificado.",historial:[{stage:"identificado",fecha:mkDate(2)}]},
-];
+const OUTBOUND_PROSPECTS_INIT = [];
 
 // ── UTILS ─────────────────────────────────────────────────────────────
 const diasEnStage = (f) => Math.floor((new Date()-new Date(f))/(1000*60*60*24));
@@ -356,22 +344,7 @@ Ejecutivo, directo, español, sin emojis, máximo 200 palabras.`}]})});
 // ══════════════════════════════════════════════════════════════════════
 //  TAB INBOUND
 // ══════════════════════════════════════════════════════════════════════
-function TabInbound({leads:initialLeads}){
-  const [leads,setLeads]=useState(initialLeads);
-  const [liveConnected,setLiveConnected]=useState(false);
-
-  useEffect(()=>{
-    const fetchLeads=async()=>{
-      try{
-        const res=await fetch('https://road-tractovan-andrea-production.up.railway.app/leads');
-        const data=await res.json();
-        if(data.leads&&data.leads.length>0){setLeads(data.leads);setLiveConnected(true);}
-      }catch(e){console.log('Using mock data');}
-    };
-    fetchLeads();
-    const interval=setInterval(fetchLeads,120000);
-    return()=>clearInterval(interval);
-  },[]);
+function TabInbound({leads,setLeads,leadsError}){
   const [selected,setSelected]=useState(null);
   const [stageFilter,setStageFilter]=useState(null);
   const [search,setSearch]=useState("");
@@ -434,6 +407,8 @@ Español, 110 palabras máximo.`}]})});
   return(
     <div>
       {showImport&&<ImportModal type="inbound" onImport={handleImport} onClose={()=>setShowImport(false)}/>}
+
+      {leadsError&&<div style={{background:T.redS,border:`1px solid #F8717130`,borderRadius:10,padding:"11px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}><div style={{width:6,height:6,borderRadius:"50%",background:"#F87171",flexShrink:0}}/><span style={{fontSize:12,color:"#F87171",fontWeight:600}}>No se pudieron cargar los leads</span><span style={{fontSize:11,color:T.textMid}}>· Error al conectar con el endpoint. Reintentando cada 2 min.</span></div>}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:16}}>
         <StatCard label="Total" value={total} sub="Desde inicio" accent={T.accent}/>
@@ -636,7 +611,26 @@ function TabOutbound({prospects:initialProspects}){
 // ══════════════════════════════════════════════════════════════════════
 export default function App(){
   const [tab,setTab]=useState("update");
+  const [leads,setLeads]=useState([]);
+  const [leadsError,setLeadsError]=useState(false);
   const TABS=[{id:"update",label:"Update",dot:"#E8873A"},{id:"inbound",label:"Inbound",dot:"#2DD4BF"},{id:"outbound",label:"Outbound",dot:"#A78BFA"}];
+
+  useEffect(()=>{
+    const fetchLeads=async()=>{
+      try{
+        const res=await fetch('https://road-tractovan-andrea-production.up.railway.app/leads');
+        if(!res.ok)throw new Error(`HTTP ${res.status}`);
+        const data=await res.json();
+        setLeads(Array.isArray(data.leads)?data.leads:[]);
+        setLeadsError(false);
+      }catch(e){
+        setLeadsError(true);
+      }
+    };
+    fetchLeads();
+    const interval=setInterval(fetchLeads,120000);
+    return()=>clearInterval(interval);
+  },[]);
   return(
     <div style={{minHeight:"100vh",background:T.bg,color:T.text,fontFamily:T.sans}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');*{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:${T.border};border-radius:2px}input::placeholder{color:${T.textDim}}textarea::placeholder{color:${T.textDim}}select option{background:${T.card}}`}</style>
@@ -650,13 +644,13 @@ export default function App(){
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:T.textMid}}><div style={{width:5,height:5,borderRadius:"50%",background:"#4ADE80",boxShadow:"0 0 5px #4ADE80"}}/>WhatsApp activo · Demo</div>
+          <div style={{display:"flex",alignItems:"center",gap:6,fontSize:10,color:T.textMid}}><div style={{width:5,height:5,borderRadius:"50%",background:"#4ADE80",boxShadow:"0 0 5px #4ADE80"}}/>WhatsApp activo · Producción</div>
           <span style={{fontSize:10,color:T.textDim}}>{new Date().toLocaleDateString("es-MX",{day:"2-digit",month:"short",year:"numeric"})}</span>
         </div>
       </div>
       <div style={{padding:"28px 32px",maxWidth:1500,margin:"0 auto"}}>
-        {tab==="update"&&<TabUpdate inLeads={INBOUND_LEADS_INIT} outProspects={OUTBOUND_PROSPECTS_INIT}/>}
-        {tab==="inbound"&&<TabInbound leads={INBOUND_LEADS_INIT}/>}
+        {tab==="update"&&<TabUpdate inLeads={leads} outProspects={OUTBOUND_PROSPECTS_INIT}/>}
+        {tab==="inbound"&&<TabInbound leads={leads} setLeads={setLeads} leadsError={leadsError}/>}
         {tab==="outbound"&&<TabOutbound prospects={OUTBOUND_PROSPECTS_INIT}/>}
       </div>
     </div>
