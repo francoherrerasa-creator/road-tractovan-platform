@@ -633,7 +633,7 @@ function TabOutbound({prospects,setProspects,prospectsError}){
                 </div>
               );
             })()}
-            {selected.señales&&<div style={{marginBottom:14}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:5}}>Señales de compra</div><div style={{fontSize:12,color:T.text,background:T.card,padding:"9px 12px",borderRadius:8,border:`1px solid ${T.border}`,lineHeight:1.5,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{selected.señales}</div></div>}
+            {selected.señales&&<div style={{marginBottom:14}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:5}}>Señales de compra</div><div style={{fontSize:12,color:T.text,background:T.card,padding:"9px 12px",borderRadius:8,border:`1px solid ${T.border}`,lineHeight:1.5,whiteSpace:"pre-wrap"}}>{selected.señales}</div></div>}
           </div>
         </div>
       </>}
