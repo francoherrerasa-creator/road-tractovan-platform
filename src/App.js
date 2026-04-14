@@ -515,8 +515,6 @@ function TabOutbound({prospects,setProspects,prospectsError}){
   const [selected,setSelected]=useState(null);
   const [stageFilter,setStageFilter]=useState(null);
   const [search,setSearch]=useState("");
-  const [analysis,setAnalysis]=useState({});
-  const [analysisLoading,setAnalysisLoading]=useState({});
   const [showImport,setShowImport]=useState(false);
   const [importCount,setImportCount]=useState(0);
 
@@ -531,16 +529,6 @@ function TabOutbound({prospects,setProspects,prospectsError}){
     setImportCount(rows.length);
     setTimeout(()=>setImportCount(0),4000);
   };
-
-  const runAnalysis=useCallback(async(p)=>{
-    const id=p.id;setAnalysisLoading(prev=>({...prev,[id]:true}));setAnalysis(prev=>({...prev,[id]:null}));
-    try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:2000,tools:[{type:"web_search_20250305",name:"web_search"}],messages:[{role:"user",content:`Consultor McKinsey analizando "${p.empresa}" para Road Tractovan (tractocamiones México). Busca info real. Genera: RESUMEN EJECUTIVO, FODA, MODELO DE NEGOCIO, BENCHMARK VS COMPETENCIA, SEÑALES DE COMPRA (por qué necesitan tractocamiones AHORA), CONTACTO IDEAL (cargo + cómo llegar), MENSAJE DE OUTREACH (4-5 líneas personalizado para Road Tractovan), SIGUIENTES PASOS (3 acciones). En español, datos reales.`}]})});
-      const d=await res.json();const txt=d.content?.filter(b=>b.type==="text").map(b=>b.text).join("\n")||"";
-      setAnalysis(prev=>({...prev,[id]:txt}));moveStage(id,"investigado");
-    }catch(e){setAnalysis(prev=>({...prev,[id]:"Error generando análisis."}));}
-    setAnalysisLoading(prev=>({...prev,[id]:false}));
-  },[]);
 
   const filtered=prospects.filter(p=>{
     if(stageFilter&&p.stage!==stageFilter)return false;
@@ -591,8 +579,7 @@ function TabOutbound({prospects,setProspects,prospectsError}){
                   <td style={{padding:"11px 14px"}}><StageBadge stages={OUTBOUND_STAGES} stageId={p.stage}/></td>
                   <td style={{padding:"11px 14px"}}><DaysChip days={dias} warn={5} danger={10}/></td>
                   <td style={{padding:"11px 14px"}}><span style={{fontSize:11,fontWeight:700,color:prioC}}>{p.prioridad==="Alta"?"▲":p.prioridad==="Media"?"●":"▽"} {p.prioridad}</span></td>
-                  <td style={{padding:"11px 14px",display:"flex",gap:6,alignItems:"center"}}>
-                    <button onClick={e=>{e.stopPropagation();runAnalysis(p);setSelected(p);}} disabled={analysisLoading[p.id]} style={{padding:"4px 10px",borderRadius:6,background:T.purpleS,border:`1px solid #A78BFA30`,color:"#A78BFA",fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:T.sans,opacity:analysisLoading[p.id]?0.5:1}}>{analysisLoading[p.id]?"...":"✦ Analizar"}</button>
+                  <td style={{padding:"11px 14px"}}>
                     <button onClick={e=>{e.stopPropagation();setSelected(p);}} style={{padding:"4px 10px",borderRadius:6,background:T.accentS,border:`1px solid ${T.accent}30`,color:T.accent,fontSize:10,fontWeight:600,cursor:"pointer",fontFamily:T.sans}}>Ver →</button>
                   </td>
                 </tr>
@@ -647,9 +634,6 @@ function TabOutbound({prospects,setProspects,prospectsError}){
               );
             })()}
             {selected.señales&&<div style={{marginBottom:14}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:5}}>Señales de compra</div><div style={{fontSize:12,color:T.text,background:T.card,padding:"9px 12px",borderRadius:8,border:`1px solid ${T.border}`,lineHeight:1.5,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{selected.señales}</div></div>}
-            {!analysis[selected.id]&&!analysisLoading[selected.id]&&<div style={{marginBottom:16,textAlign:"center"}}><button onClick={()=>runAnalysis(selected)} style={{background:"none",border:"none",color:T.textMid,fontSize:11,cursor:"pointer",fontFamily:T.sans,textDecoration:"underline",padding:"6px 10px"}}>Ver análisis profundo →</button></div>}
-            {analysis[selected.id]&&<div style={{background:T.purpleS,border:`1px solid #A78BFA30`,borderRadius:10,padding:16}}><div style={{fontSize:9,color:"#A78BFA",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Claude · Análisis consultoría · Web Search</div><div style={{fontSize:12,color:T.text,lineHeight:1.85,whiteSpace:"pre-wrap"}}>{analysis[selected.id]}</div></div>}
-            {analysisLoading[selected.id]&&<div style={{padding:"20px 0",textAlign:"center"}}><Spinner color="#A78BFA"/><div style={{fontSize:11,color:T.textMid,marginTop:10}}>Analizando con web search...</div></div>}
           </div>
         </div>
       </>}
