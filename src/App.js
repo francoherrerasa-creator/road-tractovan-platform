@@ -48,6 +48,15 @@ const diasEnStage = (f) => Math.floor((new Date()-new Date(f))/(1000*60*60*24));
 const getStage = (stages,id) => stages.find(s=>s.id===id);
 const stageIndex = (stages,id) => stages.findIndex(s=>s.id===id);
 
+const normalizeStage = (raw) => {
+  if (!raw) return "nuevo_contacto";
+  const s = String(raw).toLowerCase().trim()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, "_");
+  const aliases = { cerrado_ganado: "ganado", cerrado_perdido: "perdido" };
+  return aliases[s] || s;
+};
+
 // Parsear CSV/Excel pegado como texto
 const parseCSVText = (text, type) => {
   const lines = text.trim().split("\n").filter(l=>l.trim());
@@ -127,20 +136,26 @@ function StageMover({stages,current,onMove}){
 }
 
 function Historial({historial,stages}){
+  const items=historial||[];
   return(
     <div>
       <div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Historial</div>
-      {historial.map((h,i)=>{
-        const s=getStage(stages,h.stage);
+      {items.map((h,i)=>{
+        const stageId=h.stage?normalizeStage(h.stage):null;
+        const s=stageId?getStage(stages,stageId):null;
+        const isLast=i>=items.length-1;
+        const dotColor=s?.color||T.accent;
         return(
           <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
             <div style={{display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0}}>
-              <div style={{width:7,height:7,borderRadius:"50%",background:s?.color||T.textDim,marginTop:3}}/>
-              {i<historial.length-1&&<div style={{width:1,height:16,background:T.border}}/>}
+              <div style={{width:7,height:7,borderRadius:"50%",background:dotColor,marginTop:4}}/>
+              {!isLast&&<div style={{width:1,height:16,background:T.border}}/>}
             </div>
-            <div style={{paddingBottom:i<historial.length-1?4:0}}>
-              <span style={{fontSize:11,color:s?.color||T.textMid,fontWeight:600}}>{s?.label||h.stage}</span>
-              <span style={{fontSize:10,color:T.textDim,marginLeft:8}}>{h.fecha}</span>
+            <div style={{paddingBottom:isLast?0:6}}>
+              {s
+                ?<span style={{fontSize:11,color:s.color,fontWeight:600}}>{s.label}</span>
+                :<span style={{fontSize:11,color:T.text,fontWeight:500}}>{h.evento||h.stage||"—"}</span>}
+              <span style={{fontSize:10,color:T.textDim,marginLeft:8,fontFamily:T.mono}}>{h.fecha}</span>
             </div>
           </div>
         );
@@ -428,7 +443,7 @@ Español, 110 palabras máximo.`}]})});
 
       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
         <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr style={{background:T.surface,borderBottom:`1px solid ${T.border}`}}>{["","Empresa","Flota / Carga","Etapa","Días","Urgencia","Score",""].map((h,i)=><th key={i} style={{padding:"10px 14px",textAlign:"left",fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>{h}</th>)}</tr></thead>
+          <thead><tr style={{background:T.surface,borderBottom:`1px solid ${T.border}`}}>{["","Empresa","Flota / Carga","Etapa","Siguiente Acción","Días","Urgencia","Score",""].map((h,i)=><th key={i} style={{padding:"10px 14px",textAlign:"left",fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>{h}</th>)}</tr></thead>
           <tbody>
             {filtered.map(lead=>{
               const dias=diasEnStage(lead.fecha_stage);
@@ -439,6 +454,7 @@ Español, 110 palabras máximo.`}]})});
                   <td style={{padding:"11px 14px"}}><div style={{fontSize:13,fontWeight:600,color:T.text}}>{lead.empresa}</div><div style={{fontSize:10,color:T.textMid,marginTop:1}}>{lead.ciudad} · {lead.contacto}</div></td>
                   <td style={{padding:"11px 14px"}}><div style={{fontSize:12,color:T.text,fontFamily:T.mono}}>{lead.flota}</div><div style={{fontSize:10,color:T.textMid,marginTop:1}}>{lead.tipo_carga}</div></td>
                   <td style={{padding:"11px 14px"}}><StageBadge stages={INBOUND_STAGES} stageId={lead.stage}/></td>
+                  <td style={{padding:"11px 14px",maxWidth:180}}>{lead.siguiente_accion?<span style={{fontSize:11,color:T.text,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden",lineHeight:1.4}}>{lead.siguiente_accion}</span>:<span style={{fontSize:11,color:T.textDim,fontStyle:"italic"}}>Sin definir</span>}</td>
                   <td style={{padding:"11px 14px"}}><DaysChip days={dias}/></td>
                   <td style={{padding:"11px 14px"}}><span style={{fontSize:11,fontWeight:700,color:urgC}}>{lead.urgencia==="Alta"?"▲":lead.urgencia==="Media"?"●":"▽"} {lead.urgencia}</span></td>
                   <td style={{padding:"11px 14px",width:80}}><div style={{height:3,background:T.border,borderRadius:2,overflow:"hidden"}}><div style={{width:`${lead.score}%`,height:"100%",background:lead.score>=80?"#4ADE80":lead.score>=60?"#FBBF24":"#F87171",borderRadius:2}}/></div></td>
@@ -467,8 +483,20 @@ Español, 110 palabras máximo.`}]})});
             </div>
             <div style={{marginBottom:16}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Mover a etapa</div><StageMover stages={INBOUND_STAGES} current={selected.stage} onMove={(s)=>moveStage(selected.id,s)}/></div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 14px",marginBottom:14}}>
-              {[["Flota",selected.flota],["Servicio",selected.servicio],["Tipo de carga",selected.tipo_carga],["Urgencia",selected.urgencia],["Teléfono",selected.telefono],["Email",selected.email],["Entrada",selected.fecha_entrada]].map(([k,v])=><div key={k} style={{marginBottom:10}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:2}}>{k}</div><div style={{fontSize:12,color:T.text,wordBreak:"break-all"}}>{v||"—"}</div></div>)}
+              {[
+                ["Nombre",selected.contacto],
+                ["Empresa",selected.empresa],
+                ["Teléfono",selected.telefono],
+                ["Email",selected.email],
+                ["Producto buscado",selected.producto_buscado||selected.flota],
+                ["Presupuesto",selected.presupuesto],
+                ["Nivel de interés",selected.nivel_interes],
+                ["Urgencia",selected.urgencia],
+                ["Entrada",selected.fecha_entrada],
+              ].filter(([,v])=>v!==undefined&&v!==null&&v!=="").map(([k,v])=><div key={k} style={{marginBottom:10}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:2}}>{k}</div><div style={{fontSize:12,color:T.text,wordBreak:"break-all"}}>{v}</div></div>)}
             </div>
+            {selected.siguiente_accion&&<div style={{marginBottom:16,padding:"12px 14px",background:T.accentS,border:`1px solid ${T.accent}30`,borderRadius:10}}><div style={{fontSize:9,color:T.accent,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:6,fontWeight:700}}>Siguiente acción</div><div style={{fontSize:13,color:T.text,lineHeight:1.6}}>{selected.siguiente_accion}</div></div>}
+            {selected.telefono&&(()=>{const tel=String(selected.telefono).replace(/\D/g,"");return(<div style={{display:"flex",gap:8,marginBottom:14}}><a href={`tel:${tel}`} style={{flex:1,padding:"11px 0",borderRadius:8,background:T.blueS,border:`1px solid ${T.blue}30`,color:T.blue,fontSize:12,fontWeight:600,textAlign:"center",textDecoration:"none",fontFamily:T.sans}}>📞 Llamar</a><a href={`https://wa.me/${tel}`} target="_blank" rel="noopener noreferrer" style={{flex:1,padding:"11px 0",borderRadius:8,background:T.greenS,border:`1px solid ${T.green}30`,color:T.green,fontSize:12,fontWeight:600,textAlign:"center",textDecoration:"none",fontFamily:T.sans}}>💬 WhatsApp</a></div>);})()}
             <div style={{marginBottom:16}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:5}}>Notas</div><div style={{fontSize:12,color:T.text,background:T.card,padding:12,borderRadius:8,lineHeight:1.7,border:`1px solid ${T.border}`}}>{selected.notas||"Sin notas"}</div></div>
             <div style={{marginBottom:16}}><Historial historial={selected.historial} stages={INBOUND_STAGES}/></div>
             <button onClick={()=>handleAI(selected)} disabled={aiLoading} style={{width:"100%",padding:"11px 0",borderRadius:8,background:aiLoading?T.border:T.accent,color:"#000",fontWeight:700,fontSize:12,border:"none",cursor:aiLoading?"not-allowed":"pointer",fontFamily:T.sans}}>{aiLoading?"Analizando...":"✦ Análisis IA del prospecto"}</button>
@@ -622,7 +650,7 @@ export default function App(){
         const res=await fetch('https://road-tractovan-andrea-production.up.railway.app/leads');
         if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const data=await res.json();
-        setLeads(Array.isArray(data.leads)?data.leads:[]);
+        setLeads(Array.isArray(data.leads) ? data.leads.map(l => ({...l, stage: normalizeStage(l.stage)})) : []);
         setLeadsError(false);
       }catch(e){
         setLeadsError(true);
@@ -639,7 +667,7 @@ export default function App(){
         const res=await fetch('https://outbound-engine-production-2b8d.up.railway.app/prospects');
         if(!res.ok)throw new Error(`HTTP ${res.status}`);
         const data=await res.json();
-        setProspects(Array.isArray(data.prospects)?data.prospects:[]);
+        setProspects(Array.isArray(data.prospects) ? data.prospects.map(p => ({...p, stage: normalizeStage(p.stage)})) : []);
         setProspectsError(false);
       }catch(e){
         setProspectsError(true);
