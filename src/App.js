@@ -43,8 +43,6 @@ const mkDate = (d) => { const dt=new Date(); dt.setDate(dt.getDate()-d); return 
 
 const INBOUND_LEADS_INIT = [];
 
-const OUTBOUND_PROSPECTS_INIT = [];
-
 // ── UTILS ─────────────────────────────────────────────────────────────
 const diasEnStage = (f) => Math.floor((new Date()-new Date(f))/(1000*60*60*24));
 const getStage = (stages,id) => stages.find(s=>s.id===id);
@@ -485,8 +483,7 @@ Español, 110 palabras máximo.`}]})});
 // ══════════════════════════════════════════════════════════════════════
 //  TAB OUTBOUND
 // ══════════════════════════════════════════════════════════════════════
-function TabOutbound({prospects:initialProspects}){
-  const [prospects,setProspects]=useState(initialProspects);
+function TabOutbound({prospects,setProspects,prospectsError}){
   const [selected,setSelected]=useState(null);
   const [stageFilter,setStageFilter]=useState(null);
   const [search,setSearch]=useState("");
@@ -531,6 +528,8 @@ function TabOutbound({prospects:initialProspects}){
   return(
     <div>
       {showImport&&<ImportModal type="outbound" onImport={handleImport} onClose={()=>setShowImport(false)}/>}
+
+      {prospectsError&&<div style={{background:T.redS,border:`1px solid #F8717130`,borderRadius:10,padding:"11px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}><div style={{width:6,height:6,borderRadius:"50%",background:"#F87171",flexShrink:0}}/><span style={{fontSize:12,color:"#F87171",fontWeight:600}}>No se pudieron cargar los prospects</span><span style={{fontSize:11,color:T.textMid}}>· Error al conectar con el Outbound Engine. Reintentando cada 2 min.</span></div>}
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
         <StatCard label="Prospectos activos" value={pActive} sub="En pipeline" accent="#A78BFA"/>
@@ -613,6 +612,8 @@ export default function App(){
   const [tab,setTab]=useState("update");
   const [leads,setLeads]=useState([]);
   const [leadsError,setLeadsError]=useState(false);
+  const [prospects,setProspects]=useState([]);
+  const [prospectsError,setProspectsError]=useState(false);
   const TABS=[{id:"update",label:"Update",dot:"#E8873A"},{id:"inbound",label:"Inbound",dot:"#2DD4BF"},{id:"outbound",label:"Outbound",dot:"#A78BFA"}];
 
   useEffect(()=>{
@@ -629,6 +630,23 @@ export default function App(){
     };
     fetchLeads();
     const interval=setInterval(fetchLeads,120000);
+    return()=>clearInterval(interval);
+  },[]);
+
+  useEffect(()=>{
+    const fetchProspects=async()=>{
+      try{
+        const res=await fetch('https://outbound-engine-production-2b8d.up.railway.app/prospects');
+        if(!res.ok)throw new Error(`HTTP ${res.status}`);
+        const data=await res.json();
+        setProspects(Array.isArray(data.prospects)?data.prospects:[]);
+        setProspectsError(false);
+      }catch(e){
+        setProspectsError(true);
+      }
+    };
+    fetchProspects();
+    const interval=setInterval(fetchProspects,120000);
     return()=>clearInterval(interval);
   },[]);
   return(
@@ -649,9 +667,9 @@ export default function App(){
         </div>
       </div>
       <div style={{padding:"28px 32px",maxWidth:1500,margin:"0 auto"}}>
-        {tab==="update"&&<TabUpdate inLeads={leads} outProspects={OUTBOUND_PROSPECTS_INIT}/>}
+        {tab==="update"&&<TabUpdate inLeads={leads} outProspects={prospects}/>}
         {tab==="inbound"&&<TabInbound leads={leads} setLeads={setLeads} leadsError={leadsError}/>}
-        {tab==="outbound"&&<TabOutbound prospects={OUTBOUND_PROSPECTS_INIT}/>}
+        {tab==="outbound"&&<TabOutbound prospects={prospects} setProspects={setProspects} prospectsError={prospectsError}/>}
       </div>
     </div>
   );
