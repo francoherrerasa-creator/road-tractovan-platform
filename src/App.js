@@ -617,13 +617,37 @@ function TabOutbound({prospects,setProspects,prospectsError}){
               <div style={{textAlign:"right"}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:4}}>Días en etapa</div><DaysChip days={diasEnStage(selected.fecha_stage)} warn={5} danger={10}/></div>
             </div>
             <div style={{marginBottom:16}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:8}}>Mover a etapa</div><StageMover stages={OUTBOUND_STAGES} current={selected.stage} onMove={(s)=>moveStage(selected.id,s)}/></div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"0 14px",marginBottom:14}}>
-              {[["Flota est.",selected.flota_est],["Prioridad",selected.prioridad],["Contacto clave",selected.contacto_clave],["Web",selected.web],["Entrada",selected.fecha_entrada]].map(([k,v])=><div key={k} style={{marginBottom:10}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:2}}>{k}</div><div style={{fontSize:12,color:T.text}}>{v||"—"}</div></div>)}
+            <div style={{display:"flex",gap:18,marginBottom:16,padding:"10px 14px",background:T.card,borderRadius:10,border:`1px solid ${T.border}`,flexWrap:"wrap"}}>
+              {[["Flota est.",selected.flota_est],["Prioridad",selected.prioridad],["Entrada",selected.fecha_entrada]].filter(([,v])=>v).map(([k,v])=>
+                <div key={k}><div style={{fontSize:8,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:2}}>{k}</div><div style={{fontSize:12,color:T.text,fontWeight:600}}>{v}</div></div>
+              )}
             </div>
-            <div style={{marginBottom:14}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:5}}>Señales de compra</div><div style={{fontSize:12,color:T.text,background:T.card,padding:10,borderRadius:8,border:`1px solid ${T.border}`,lineHeight:1.6}}>{selected.señales||"—"}</div></div>
-            <div style={{marginBottom:14}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:5}}>Notas</div><div style={{fontSize:12,color:T.text,background:T.card,padding:10,borderRadius:8,border:`1px solid ${T.border}`,lineHeight:1.6}}>{selected.notas||"—"}</div></div>
-            <div style={{marginBottom:16}}><Historial historial={selected.historial} stages={OUTBOUND_STAGES}/></div>
-            <button onClick={()=>runAnalysis(selected)} disabled={analysisLoading[selected.id]} style={{width:"100%",padding:"11px 0",borderRadius:8,background:analysisLoading[selected.id]?T.border:"#A78BFA",color:"#000",fontWeight:700,fontSize:12,border:"none",cursor:analysisLoading[selected.id]?"not-allowed":"pointer",fontFamily:T.sans,marginBottom:10}}>{analysisLoading[selected.id]?"Generando análisis...":"✦ Análisis consultoría completo"}</button>
+            {(()=>{
+              const dmName=(selected.contacto_clave||"").split("·")[0].trim();
+              const linkedinSearch=selected.linkedin_search||(dmName?`https://www.google.com/search?q=${encodeURIComponent(`site:linkedin.com ${dmName} ${selected.empresa}`)}`:null);
+              const tel=selected.telefono_empresa?String(selected.telefono_empresa).replace(/\D/g,""):null;
+              const hasAnyContact=selected.contacto_clave||tel||selected.email_empresa;
+              const googleFallback=`https://www.google.com/search?q=${encodeURIComponent(`${selected.empresa} director contacto telefono`)}`;
+              return(
+                <div style={{marginBottom:16,padding:"14px 16px",background:T.purpleS,border:`1px solid #A78BFA40`,borderRadius:12}}>
+                  <div style={{fontSize:9,color:"#A78BFA",textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:10,fontWeight:700}}>Contacto</div>
+                  {hasAnyContact?<>
+                    {selected.contacto_clave&&<div style={{fontSize:13,color:T.text,fontWeight:600,marginBottom:10}}>{selected.contacto_clave}</div>}
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      {linkedinSearch&&<a href={linkedinSearch} target="_blank" rel="noopener noreferrer" style={{padding:"7px 12px",borderRadius:7,background:T.blueS,border:`1px solid ${T.blue}30`,color:T.blue,fontSize:11,fontWeight:600,textDecoration:"none",fontFamily:T.sans}}>🔗 LinkedIn</a>}
+                      {tel&&<a href={`tel:${tel}`} style={{padding:"7px 12px",borderRadius:7,background:T.accentS,border:`1px solid ${T.accent}30`,color:T.accent,fontSize:11,fontWeight:600,textDecoration:"none",fontFamily:T.sans}}>📞 Llamar</a>}
+                      {selected.email_empresa&&<a href={`mailto:${selected.email_empresa}`} style={{padding:"7px 12px",borderRadius:7,background:T.greenS,border:`1px solid ${T.green}30`,color:T.green,fontSize:11,fontWeight:600,textDecoration:"none",fontFamily:T.sans}}>✉ Email</a>}
+                    </div>
+                    {selected.approach&&<div style={{fontSize:11,color:T.textMid,fontStyle:"italic",lineHeight:1.5,marginTop:10,paddingTop:10,borderTop:`1px solid #A78BFA20`}}>💡 {selected.approach}</div>}
+                  </>:<>
+                    <div style={{fontSize:12,color:T.textMid,marginBottom:10}}>Sin datos de contacto — investigar manualmente</div>
+                    <a href={googleFallback} target="_blank" rel="noopener noreferrer" style={{display:"inline-block",padding:"7px 12px",borderRadius:7,background:T.blueS,border:`1px solid ${T.blue}30`,color:T.blue,fontSize:11,fontWeight:600,textDecoration:"none",fontFamily:T.sans}}>🔍 Buscar en Google</a>
+                  </>}
+                </div>
+              );
+            })()}
+            {selected.señales&&<div style={{marginBottom:14}}><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:5}}>Señales de compra</div><div style={{fontSize:12,color:T.text,background:T.card,padding:"9px 12px",borderRadius:8,border:`1px solid ${T.border}`,lineHeight:1.5,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{selected.señales}</div></div>}
+            {!analysis[selected.id]&&!analysisLoading[selected.id]&&<div style={{marginBottom:16,textAlign:"center"}}><button onClick={()=>runAnalysis(selected)} style={{background:"none",border:"none",color:T.textMid,fontSize:11,cursor:"pointer",fontFamily:T.sans,textDecoration:"underline",padding:"6px 10px"}}>Ver análisis profundo →</button></div>}
             {analysis[selected.id]&&<div style={{background:T.purpleS,border:`1px solid #A78BFA30`,borderRadius:10,padding:16}}><div style={{fontSize:9,color:"#A78BFA",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Claude · Análisis consultoría · Web Search</div><div style={{fontSize:12,color:T.text,lineHeight:1.85,whiteSpace:"pre-wrap"}}>{analysis[selected.id]}</div></div>}
             {analysisLoading[selected.id]&&<div style={{padding:"20px 0",textAlign:"center"}}><Spinner color="#A78BFA"/><div style={{fontSize:11,color:T.textMid,marginTop:10}}>Analizando con web search...</div></div>}
           </div>
