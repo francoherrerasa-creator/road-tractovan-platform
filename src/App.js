@@ -290,7 +290,7 @@ function TabUpdate({inLeads,outProspects}){
   const generate=useCallback(async()=>{
     if(ran.current)return;ran.current=true;setLoading(true);setError(null);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:`Eres asesor estratégico C-Level de Road Tractovan (venta y arrendamiento de tractocamiones México).
+      const res=await fetch("https://road-tractovan-andrea-production.up.railway.app/briefing",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1000,messages:[{role:"user",content:`Eres asesor estratégico C-Level de Road Tractovan (venta y arrendamiento de tractocamiones México).
 
 PIPELINE HOY:
 Inbound activos: ${inActive} | Ganados: ${inGanado} | Negociación: ${inNeg} | Score prom: ${inScore}/100 | Estancados +14d: ${stalled.length}
