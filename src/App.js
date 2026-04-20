@@ -18,25 +18,21 @@ const T = {
 };
 
 const INBOUND_STAGES = [
-  { id:"nuevo_contacto",   label:"Nuevo contacto",   color:"#2DD4BF" },
-  { id:"calificado",       label:"Calificado",        color:"#60A5FA" },
-  { id:"cita_agendada",    label:"Cita agendada",     color:"#A78BFA" },
-  { id:"visita_realizada", label:"Visita realizada",  color:"#FBBF24" },
-  { id:"propuesta_enviada",label:"Propuesta enviada", color:"#FB923C" },
-  { id:"negociacion",      label:"Negociación",       color:"#E8873A" },
-  { id:"ganado",           label:"Cerrado ganado",    color:"#4ADE80" },
-  { id:"perdido",          label:"Cerrado perdido",   color:"#F87171" },
+  { id:"nuevo_contacto", label:"Nuevo Contacto", color:"#2DD4BF" },
+  { id:"calificado",     label:"Calificado",     color:"#60A5FA" },
+  { id:"cita_agendada",  label:"Cita Agendada",  color:"#A78BFA" },
+  { id:"cotizando",      label:"Cotizando",      color:"#FBBF24" },
+  { id:"vendido",        label:"Vendido",        color:"#4ADE80" },
+  { id:"perdido",        label:"Perdido",        color:"#F87171" },
 ];
 
 const OUTBOUND_STAGES = [
-  { id:"identificado",     label:"Identificado",      color:"#2DD4BF" },
-  { id:"investigado",      label:"Investigado",        color:"#60A5FA" },
-  { id:"mensaje_enviado",  label:"Mensaje enviado",    color:"#A78BFA" },
-  { id:"respondio",        label:"Respondió",          color:"#FBBF24" },
-  { id:"reunion_agendada", label:"Reunión agendada",   color:"#FB923C" },
-  { id:"propuesta_enviada",label:"Propuesta enviada",  color:"#E8873A" },
-  { id:"ganado",           label:"Cerrado ganado",     color:"#4ADE80" },
-  { id:"perdido",          label:"Cerrado perdido",    color:"#F87171" },
+  { id:"nuevo_contacto", label:"Nuevo Contacto", color:"#2DD4BF" },
+  { id:"calificado",     label:"Calificado",     color:"#60A5FA" },
+  { id:"cita_agendada",  label:"Cita Agendada",  color:"#A78BFA" },
+  { id:"cotizando",      label:"Cotizando",      color:"#FBBF24" },
+  { id:"vendido",        label:"Vendido",        color:"#4ADE80" },
+  { id:"perdido",        label:"Perdido",        color:"#F87171" },
 ];
 
 const mkDate = (d) => { const dt=new Date(); dt.setDate(dt.getDate()-d); return dt.toISOString().split("T")[0]; };
@@ -53,7 +49,17 @@ const normalizeStage = (raw) => {
   const s = String(raw).toLowerCase().trim()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
     .replace(/\s+/g, "_");
-  const aliases = { cerrado_ganado: "ganado", cerrado_perdido: "perdido" };
+  const aliases = {
+    nuevo:"nuevo_contacto",
+    agendado:"cita_agendada",
+    negociacion:"cotizando", propuesta:"cotizando", propuesta_enviada:"cotizando",
+    ganado:"vendido", cerrado:"vendido", cerrado_ganado:"vendido",
+    cerrado_perdido:"perdido",
+    visita_realizada:"cita_agendada",
+    identificado:"nuevo_contacto", investigado:"calificado",
+    mensaje_enviado:"calificado", respondio:"calificado",
+    reunion_agendada:"cita_agendada",
+  };
   return aliases[s] || s;
 };
 
@@ -123,7 +129,7 @@ function Funnel({stages,items,onFilter,activeFilter}){
 
 function StageMover({stages,current,onMove}){
   const idx=stageIndex(stages,current);
-  if(current==="ganado"||current==="perdido")return <div style={{fontSize:11,color:T.textMid,fontStyle:"italic"}}>Deal cerrado</div>;
+  if(current==="vendido"||current==="perdido")return <div style={{fontSize:11,color:T.textMid,fontStyle:"italic"}}>Deal cerrado</div>;
   const prev=idx>0?stages[idx-1]:null;
   const next=idx<stages.length-1?stages[idx+1]:null;
   return(
@@ -279,13 +285,13 @@ function TabUpdate({inLeads,outProspects}){
   const [error,setError]=useState(null);
   const ran=useRef(false);
 
-  const inActive=inLeads.filter(l=>l.stage!=="ganado"&&l.stage!=="perdido").length;
-  const inGanado=inLeads.filter(l=>l.stage==="ganado").length;
-  const inNeg=inLeads.filter(l=>l.stage==="negociacion").length;
+  const inActive=inLeads.filter(l=>l.stage!=="vendido"&&l.stage!=="perdido").length;
+  const inVendido=inLeads.filter(l=>l.stage==="vendido").length;
+  const inCotizando=inLeads.filter(l=>l.stage==="cotizando").length;
   const inScore=inLeads.length?Math.round(inLeads.reduce((a,b)=>a+b.score,0)/inLeads.length):0;
-  const outActive=outProspects.filter(p=>p.stage!=="ganado"&&p.stage!=="perdido").length;
-  const stalled=inLeads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="ganado"&&l.stage!=="perdido");
-  const top=[...inLeads].filter(l=>l.stage!=="perdido").sort((a,b)=>b.score-a.score)[0];
+  const outActive=outProspects.filter(p=>p.stage!=="vendido"&&p.stage!=="perdido").length;
+  const stalled=inLeads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="vendido"&&l.stage!=="perdido");
+  const top=[...inLeads].filter(l=>l.stage!=="perdido"&&l.stage!=="vendido").sort((a,b)=>b.score-a.score)[0];
 
   const generate=useCallback(async()=>{
     if(ran.current)return;ran.current=true;setLoading(true);setError(null);
@@ -293,7 +299,7 @@ function TabUpdate({inLeads,outProspects}){
       const res=await fetch("https://road-tractovan-andrea-production.up.railway.app/briefing",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1000,messages:[{role:"user",content:`Eres asesor estratégico C-Level de Road Tractovan (venta y arrendamiento de tractocamiones México).
 
 PIPELINE HOY:
-Inbound activos: ${inActive} | Ganados: ${inGanado} | Negociación: ${inNeg} | Score prom: ${inScore}/100 | Estancados +14d: ${stalled.length}
+Inbound activos: ${inActive} | Vendidos: ${inVendido} | Cotizando: ${inCotizando} | Score prom: ${inScore}/100 | Estancados +14d: ${stalled.length}
 Lead top: ${top?.empresa||"N/A"} (stage: ${top?.stage||"N/A"}, score ${top?.score||0})
 Etapas inbound: ${INBOUND_STAGES.map(s=>s.label+": "+inLeads.filter(l=>l.stage===s.id).length).join(" | ")}
 Outbound activos: ${outActive} | Etapas: ${OUTBOUND_STAGES.map(s=>s.label+": "+outProspects.filter(p=>p.stage===s.id).length).join(" | ")}
@@ -338,8 +344,8 @@ Ejecutivo, directo, español, sin emojis, máximo 200 palabras.`}]})});
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,marginBottom:18}}>
         <StatCard label="Leads activos" value={inActive} sub="Inbound" accent="#E8873A"/>
-        <StatCard label="Ganados" value={inGanado} sub="Cerrados" accent="#4ADE80"/>
-        <StatCard label="Negociación" value={inNeg} sub="Calientes" accent="#FBBF24"/>
+        <StatCard label="Vendidos" value={inVendido} sub="Cerrados" accent="#4ADE80"/>
+        <StatCard label="Cotizando" value={inCotizando} sub="Calientes" accent="#FBBF24"/>
         <StatCard label="Estancados" value={stalled.length} sub="+14 días" accent="#F87171"/>
         <StatCard label="Outbound" value={outActive} sub="Activos" accent="#A78BFA"/>
         <StatCard label="Score prom." value={inScore} sub="/ 100" accent="#60A5FA"/>
@@ -379,10 +385,10 @@ function TabInbound({leads,setLeads,leadsError}){
   };
 
   const total=leads.length;
-  const active=leads.filter(l=>l.stage!=="ganado"&&l.stage!=="perdido").length;
-  const ganado=leads.filter(l=>l.stage==="ganado").length;
-  const neg=leads.filter(l=>l.stage==="negociacion").length;
-  const stalled=leads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="ganado"&&l.stage!=="perdido").length;
+  const active=leads.filter(l=>l.stage!=="vendido"&&l.stage!=="perdido").length;
+  const vendido=leads.filter(l=>l.stage==="vendido").length;
+  const cotizando=leads.filter(l=>l.stage==="cotizando").length;
+  const stalled=leads.filter(l=>diasEnStage(l.fecha_stage)>14&&l.stage!=="vendido"&&l.stage!=="perdido").length;
 
   const filtered=leads.filter(l=>{
     if(stageFilter&&l.stage!==stageFilter)return false;
@@ -426,8 +432,8 @@ Español, 110 palabras máximo.`}]})});
       <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:16}}>
         <StatCard label="Total" value={total} sub="Desde inicio" accent={T.accent}/>
         <StatCard label="Activos" value={active} sub="En pipeline" accent="#2DD4BF"/>
-        <StatCard label="Ganados" value={ganado} sub="Cerrados" accent="#4ADE80"/>
-        <StatCard label="Negociación" value={neg} sub="Calientes" accent="#FBBF24"/>
+        <StatCard label="Vendidos" value={vendido} sub="Cerrados" accent="#4ADE80"/>
+        <StatCard label="Cotizando" value={cotizando} sub="Calientes" accent="#FBBF24"/>
         <StatCard label="Estancados" value={stalled} sub="+14 días" accent="#F87171"/>
       </div>
 
@@ -536,9 +542,9 @@ function TabOutbound({prospects,setProspects,prospectsError}){
     return true;
   });
 
-  const pActive=prospects.filter(p=>p.stage!=="ganado"&&p.stage!=="perdido").length;
-  const pGanado=prospects.filter(p=>p.stage==="ganado").length;
-  const pRespondio=prospects.filter(p=>p.stage==="respondio").length;
+  const pActive=prospects.filter(p=>p.stage!=="vendido"&&p.stage!=="perdido").length;
+  const pVendido=prospects.filter(p=>p.stage==="vendido").length;
+  const pCotizando=prospects.filter(p=>p.stage==="cotizando").length;
   const pAlta=prospects.filter(p=>p.prioridad==="Alta").length;
 
   return(
@@ -549,9 +555,9 @@ function TabOutbound({prospects,setProspects,prospectsError}){
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
         <StatCard label="Prospectos activos" value={pActive} sub="En pipeline" accent="#A78BFA"/>
-        <StatCard label="Respondieron" value={pRespondio} sub="Interés confirmado" accent="#FBBF24"/>
+        <StatCard label="Cotizando" value={pCotizando} sub="En negociación" accent="#FBBF24"/>
         <StatCard label="Prioridad alta" value={pAlta} sub="Top prospects" accent="#F87171"/>
-        <StatCard label="Ganados" value={pGanado} sub="Convertidos" accent="#4ADE80"/>
+        <StatCard label="Vendidos" value={pVendido} sub="Convertidos" accent="#4ADE80"/>
       </div>
 
       <Funnel stages={OUTBOUND_STAGES} items={prospects} onFilter={setStageFilter} activeFilter={stageFilter}/>
@@ -642,6 +648,169 @@ function TabOutbound({prospects,setProspects,prospectsError}){
 }
 
 // ══════════════════════════════════════════════════════════════════════
+//  TAB PERFORMANCE
+// ══════════════════════════════════════════════════════════════════════
+function TabPerformance({inLeads,outProspects}){
+  const all=[...inLeads,...outProspects];
+  const now=new Date();
+  const startOfWeek=new Date(now);startOfWeek.setDate(now.getDate()-now.getDay()+(now.getDay()===0?-6:1));startOfWeek.setHours(0,0,0,0);
+  const startOfMonth=new Date(now.getFullYear(),now.getMonth(),1);
+
+  const parseDate=(d)=>{if(!d)return null;const dt=new Date(d);return isNaN(dt)?null:dt;};
+  const isThisWeek=(d)=>{const dt=parseDate(d);return dt&&dt>=startOfWeek;};
+  const isThisMonth=(d)=>{const dt=parseDate(d);return dt&&dt>=startOfMonth;};
+  const dateField=(l)=>l.fecha_entrada||l.fecha_stage||l.fecha;
+
+  const QUALIFIED_STAGES=["calificado","cita_agendada","cotizando","vendido"];
+  const CITA_STAGES=["cita_agendada","cotizando","vendido"];
+
+  const qualified=all.filter(l=>QUALIFIED_STAGES.includes(l.stage));
+  const citas=all.filter(l=>CITA_STAGES.includes(l.stage));
+  const ventas=all.filter(l=>l.stage==="vendido");
+  const perdidos=all.filter(l=>l.stage==="perdido");
+
+  const qWeek=qualified.filter(l=>isThisWeek(dateField(l))).length;
+  const qMonth=qualified.filter(l=>isThisMonth(dateField(l))).length;
+  const cWeek=citas.filter(l=>isThisWeek(dateField(l))).length;
+  const cMonth=citas.filter(l=>isThisMonth(dateField(l))).length;
+  const vWeek=ventas.filter(l=>isThisWeek(dateField(l))).length;
+  const vMonth=ventas.filter(l=>isThisMonth(dateField(l))).length;
+
+  const parseTicket=(v)=>{if(!v)return 0;const n=parseFloat(String(v).replace(/[^0-9.]/g,""));return isNaN(n)?0:n;};
+  const ticketTotal=ventas.reduce((a,l)=>a+parseTicket(l.ticket||l.Ticket),0);
+
+  // Funnel rates
+  const qCount=qualified.length;
+  const cCount=citas.length;
+  const vCount=ventas.length;
+  const rLeadCita=qCount>0?((cCount/qCount)*100).toFixed(0):null;
+  const rCitaVenta=cCount>0?((vCount/cCount)*100).toFixed(0):null;
+  const rOverall=qCount>0?((vCount/qCount)*100).toFixed(0):null;
+
+  // Loss analysis
+  const lossMap={};
+  perdidos.forEach(l=>{const r=(l.razon_perdida||l.Razon_Perdida||l["Razón Perdida"]||l.razon||"").trim()||"Sin razón especificada";lossMap[r]=(lossMap[r]||0)+1;});
+  const lossRows=Object.entries(lossMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  // Product mix
+  const prodMap={};
+  ventas.forEach(l=>{const p=(l.producto_vendido||l.Producto_Vendido||l["Producto Vendido"]||l.producto||"").trim()||"Sin especificar";if(!prodMap[p])prodMap[p]={count:0,ticket:0};prodMap[p].count++;prodMap[p].ticket+=parseTicket(l.ticket||l.Ticket);});
+  const prodRows=Object.entries(prodMap).sort((a,b)=>b[1].count-a[1].count);
+
+  const SectionHeader=({title})=><div style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:14,marginTop:28,fontWeight:700}}>{title}</div>;
+
+  const fmtMoney=(n)=>n.toLocaleString("es-MX",{style:"currency",currency:"MXN",maximumFractionDigits:0});
+
+  return(
+    <div style={{maxWidth:900,margin:"0 auto"}}>
+      <div style={{marginBottom:24}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:6}}>
+          <span style={{padding:"3px 10px",borderRadius:6,background:T.greenS,border:`1px solid ${T.green}30`,fontSize:9,color:T.green,fontWeight:700,letterSpacing:"0.1em"}}>PERFORMANCE</span>
+          <span style={{fontSize:10,color:T.textDim}}>{new Date().toLocaleDateString("es-MX",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</span>
+        </div>
+        <div style={{fontSize:20,fontWeight:700,color:T.text}}>Métricas de Rendimiento</div>
+        <div style={{fontSize:12,color:T.textMid,marginTop:2}}>Pipeline consolidado Inbound + Outbound</div>
+      </div>
+
+      {/* SECTION 1: KPI Cards */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(240px,1fr))",gap:14,marginBottom:8}}>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"18px 20px 14px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:T.blue,borderRadius:"12px 12px 0 0"}}/>
+          <div style={{fontSize:9,color:T.textMid,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:7}}>Leads Calificados</div>
+          <div style={{fontSize:32,fontWeight:700,color:T.text,lineHeight:1,fontFamily:T.mono}}>{qCount}</div>
+          <div style={{fontSize:10,color:T.textMid,marginTop:6}}>Esta semana: {qWeek} · Mes: {qMonth} · Total: {qCount}</div>
+        </div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"18px 20px 14px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:T.amber,borderRadius:"12px 12px 0 0"}}/>
+          <div style={{fontSize:9,color:T.textMid,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:7}}>Citas Agendadas</div>
+          <div style={{fontSize:32,fontWeight:700,color:T.text,lineHeight:1,fontFamily:T.mono}}>{cCount}</div>
+          <div style={{fontSize:10,color:T.textMid,marginTop:6}}>Esta semana: {cWeek} · Mes: {cMonth} · Total: {cCount}</div>
+        </div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"18px 20px 14px",position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:2,background:T.green,borderRadius:"12px 12px 0 0"}}/>
+          <div style={{fontSize:9,color:T.textMid,textTransform:"uppercase",letterSpacing:"0.12em",marginBottom:7}}>Ventas Cerradas</div>
+          <div style={{fontSize:32,fontWeight:700,color:T.text,lineHeight:1,fontFamily:T.mono}}>{vCount}</div>
+          <div style={{fontSize:10,color:T.textMid,marginTop:6}}>Esta semana: {vWeek} · Mes: {vMonth}</div>
+          <div style={{fontSize:11,color:T.green,fontWeight:600,marginTop:4,fontFamily:T.mono}}>Ticket total: {fmtMoney(ticketTotal)}</div>
+        </div>
+      </div>
+
+      {/* SECTION 2: Funnel */}
+      <SectionHeader title="Embudo de conversión"/>
+      {qCount>0?(
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"20px 24px"}}>
+          {[{label:"Leads Calificados",count:qCount,pct:100,color:T.blue},
+            {label:"Citas Agendadas",count:cCount,pct:qCount>0?(cCount/qCount)*100:0,color:T.amber},
+            {label:"Ventas Cerradas",count:vCount,pct:qCount>0?(vCount/qCount)*100:0,color:T.green}
+          ].map((lvl,i)=>(
+            <div key={i} style={{marginBottom:i<2?16:0}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+                <span style={{fontSize:12,color:T.text,fontWeight:600}}>{lvl.label}</span>
+                <span style={{fontSize:12,color:lvl.color,fontFamily:T.mono,fontWeight:700}}>{lvl.count}</span>
+              </div>
+              <div style={{height:28,background:`${lvl.color}14`,borderRadius:6,overflow:"hidden"}}>
+                <div style={{width:`${Math.max(lvl.pct,lvl.count>0?4:0)}%`,height:"100%",background:`${lvl.color}50`,borderRadius:6,transition:"width 0.4s ease"}}/>
+              </div>
+            </div>
+          ))}
+          <div style={{display:"flex",gap:16,marginTop:18,padding:"12px 14px",background:T.surface,borderRadius:8,border:`1px solid ${T.border}`,flexWrap:"wrap"}}>
+            <div><span style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em"}}>Lead → Cita</span><div style={{fontSize:16,fontWeight:700,color:T.amber,fontFamily:T.mono}}>{rLeadCita||"—"}%</div></div>
+            <div><span style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em"}}>Cita → Venta</span><div style={{fontSize:16,fontWeight:700,color:T.green,fontFamily:T.mono}}>{rCitaVenta||"—"}%</div></div>
+            <div><span style={{fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em"}}>Lead → Venta</span><div style={{fontSize:16,fontWeight:700,color:T.accent,fontFamily:T.mono}}>{rOverall||"—"}%</div></div>
+          </div>
+        </div>
+      ):(
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"32px 20px",textAlign:"center",color:T.textMid,fontSize:13}}>Sin datos suficientes para calcular tasas</div>
+      )}
+
+      {/* SECTION 3: Loss Analysis */}
+      <SectionHeader title="Análisis de pérdidas"/>
+      {perdidos.length>0?(
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr style={{background:T.surface,borderBottom:`1px solid ${T.border}`}}>
+              <th style={{padding:"10px 16px",textAlign:"left",fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>Razón de pérdida</th>
+              <th style={{padding:"10px 16px",textAlign:"right",fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>Cantidad</th>
+            </tr></thead>
+            <tbody>{lossRows.map(([reason,count],i)=>(
+              <tr key={i} style={{borderBottom:i<lossRows.length-1?`1px solid ${T.border}`:"none"}}>
+                <td style={{padding:"10px 16px",fontSize:12,color:T.text}}>{reason}</td>
+                <td style={{padding:"10px 16px",fontSize:13,fontWeight:700,color:T.red,fontFamily:T.mono,textAlign:"right"}}>{count}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      ):(
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"32px 20px",textAlign:"center",color:T.textMid,fontSize:13}}>Aún no hay leads perdidos registrados.</div>
+      )}
+
+      {/* SECTION 4: Product Mix */}
+      <SectionHeader title="Mix de productos vendidos"/>
+      {ventas.length>0?(
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,overflow:"hidden"}}>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr style={{background:T.surface,borderBottom:`1px solid ${T.border}`}}>
+              <th style={{padding:"10px 16px",textAlign:"left",fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>Producto</th>
+              <th style={{padding:"10px 16px",textAlign:"right",fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>Unidades</th>
+              <th style={{padding:"10px 16px",textAlign:"right",fontSize:9,color:T.textDim,textTransform:"uppercase",letterSpacing:"0.1em",fontWeight:600}}>Ticket promedio</th>
+            </tr></thead>
+            <tbody>{prodRows.map(([prod,data],i)=>(
+              <tr key={i} style={{borderBottom:i<prodRows.length-1?`1px solid ${T.border}`:"none"}}>
+                <td style={{padding:"10px 16px",fontSize:12,color:T.text,fontWeight:600}}>{prod}</td>
+                <td style={{padding:"10px 16px",fontSize:13,fontWeight:700,color:T.green,fontFamily:T.mono,textAlign:"right"}}>{data.count}</td>
+                <td style={{padding:"10px 16px",fontSize:12,color:T.text,fontFamily:T.mono,textAlign:"right"}}>{fmtMoney(data.count>0?data.ticket/data.count:0)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      ):(
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"32px 20px",textAlign:"center",color:T.textMid,fontSize:13}}>Aún no hay ventas registradas.</div>
+      )}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════════
 //  ROOT
 // ══════════════════════════════════════════════════════════════════════
 export default function App(){
@@ -650,7 +819,7 @@ export default function App(){
   const [leadsError,setLeadsError]=useState(false);
   const [prospects,setProspects]=useState([]);
   const [prospectsError,setProspectsError]=useState(false);
-  const TABS=[{id:"update",label:"Update",dot:"#E8873A"},{id:"inbound",label:"Inbound",dot:"#2DD4BF"},{id:"outbound",label:"Outbound",dot:"#A78BFA"}];
+  const TABS=[{id:"update",label:"Update",dot:"#E8873A"},{id:"inbound",label:"Inbound",dot:"#2DD4BF"},{id:"outbound",label:"Outbound",dot:"#A78BFA"},{id:"performance",label:"Performance",dot:"#4ADE80"}];
 
   useEffect(()=>{
     const fetchLeads=async()=>{
@@ -706,6 +875,7 @@ export default function App(){
         {tab==="update"&&<TabUpdate inLeads={leads} outProspects={prospects}/>}
         {tab==="inbound"&&<TabInbound leads={leads} setLeads={setLeads} leadsError={leadsError}/>}
         {tab==="outbound"&&<TabOutbound prospects={prospects} setProspects={setProspects} prospectsError={prospectsError}/>}
+        {tab==="performance"&&<TabPerformance inLeads={leads} outProspects={prospects}/>}
       </div>
     </div>
   );
